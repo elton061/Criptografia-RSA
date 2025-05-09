@@ -1,5 +1,5 @@
 #include <iostream>
-#include <cmath>
+#include <limits>
 
 const int tamanhoVetor = 500;
 
@@ -9,9 +9,13 @@ void converteParaAscii(char textoOriginal[tamanhoVetor], int ascii[tamanhoVetor]
 
 void converteParaTexto(char textoOriginal[tamanhoVetor], int ascii[tamanhoVetor]);
 
-void criptografando(int ascii[tamanhoVetor], unsigned long long textoCriptografado[tamanhoVetor], int e, int n);
+void criptografar(int ascii[tamanhoVetor], unsigned long long textoCriptografado[tamanhoVetor], int e, int n);
 
-void descriptografando(unsigned long long textoCriptografado[tamanhoVetor], int ascii[tamanhoVetor], int d, int n);
+void descriptografar(unsigned long long textoCriptografado[tamanhoVetor], int ascii[tamanhoVetor], int d, int n, char textoOriginal[tamanhoVetor]);
+
+void AdicionarTexto(char textoOriginal[tamanhoVetor]);
+
+void CalculandoChavesPrimarias(int &p, int &q, int &z, int &d, int &e, int &n);
 
 int main()
 {
@@ -20,20 +24,153 @@ int main()
     char texto[tamanhoVetor];
     int textoAscii[tamanhoVetor] = {};
     unsigned long long textoCriptografado[tamanhoVetor] = {};   //utilizei esse tipo para evitar estouro.
-    char opc;
+    int opc;
+    bool statusCriptografado = false, temTexto = false;     //controladores para o menu.
 
+    //Gera a chave privada e publica
+    CalculandoChavesPrimarias(p, q, z, d, e, n);
+
+    //Menu para manipular as funcionalidades do programa
+    do{
+        char opcValida;
+
+        do{
+            opcValida=true;
+            do{
+                cout << "\t\t\tMENU PRINCIPAL\n\n"
+                     << "1) Adicionar um texto.\n"
+                     << "2) Exibir o texto.\n"
+                     << "3) Criptografar o texto.\n"
+                     << "4) Descriptografar o texto.\n"
+                     << "5) Alterar chaves primarias\n"
+                     << "9) Sair do programa\n\n";
+                cout << "Escolha uma das opcoes acima: ";
+                cin >> opc;
+                //limpa o buffer.
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
+                if(opc != 1 && opc != 2 && opc != 3 && opc != 4 && opc != 5 && opc != 9){
+                    cout << "\n\nOpcao Invalida! \n";
+                    system("pause");
+                    system("cls");
+                    opcValida = false;
+                }
+            }while(!opcValida);
+
+            switch(opc){
+                case 1:
+                    AdicionarTexto(texto);
+                    temTexto = true;
+                    cout << "\n\nTexto adicionado com sucesso!\n";
+                    break;
+
+                case 2:
+                    if(!temTexto){
+                        cout << "\n\nNenhum texto foi adicionado ainda :(\n\n" << endl;
+                    }else{
+                        cout << "\n\n" << texto << "\n\n";
+                    }
+                    break;
+
+                case 3:
+                    converteParaAscii(texto, textoAscii);
+                    criptografar(textoAscii, textoCriptografado, e, n);
+
+                    cout << "\n\nTexto Criptografado = ";
+                    for(int i = 0; textoCriptografado[i] != 0; i++){
+                        cout << textoCriptografado[i] << " ";
+                    }
+                    cout << "\n\n";
+                    statusCriptografado = true;
+                    break;
+
+                case 4:
+                    if(!statusCriptografado){
+                        cout << "\n\nAinda nao foi feito uma criptografia! ";
+                    }else{
+                    descriptografar(textoCriptografado, textoAscii, d, n, texto);
+
+                    cout << "\n\nDescriptografado com sucesso!";
+                    cout << "\n\nTexto Original = " << texto << "\n\n";
+                    }
+                    break;
+
+                case 5:
+                    CalculandoChavesPrimarias(p, q, z, d, e, n);
+                    cout << "\n\nChave privada = " << d << endl;
+                    cout << "Chave publica = " << e << endl;
+                    break;
+
+                default:
+                    break;
+            }
+            system("pause");
+            system("cls");
+        }while(opcValida != true);
+    }while(opc != 9);
+}
+
+void converteParaAscii(char textoOriginal[tamanhoVetor], int ascii[tamanhoVetor]){
+    //convertendo o texto para a base ascii
+    for(int i = 0; textoOriginal[i] != '\0'; i++){
+        ascii[i] = static_cast<int>(textoOriginal[i]); // converte tipo char para int.
+    }
+}
+
+void converteParaTexto(char textoOriginal[tamanhoVetor], int ascii[tamanhoVetor]){
+    //convertendo o texto no formato ASCII para formato original novamente
+    for (int i = 0; ascii[i] != 0; i++){
+        textoOriginal[i] = static_cast<char>(ascii[i]); //convertendo tipo int para char.
+    }
+}
+
+//E preciso utilizar exponenciacao rapida modular para otimizar o tempo para calcular e evitar estouros, quebrando o calculo grande da potencia em pequenas partes.
+void criptografar(int ascii[tamanhoVetor], unsigned long long textoCriptografado[tamanhoVetor], int e, int n){
+    for(int i = 0; ascii[i] != 0; i++){
+        unsigned long long resultado = 1;
+        unsigned long long base = ascii[i] % n;
+        int expoente = e;
+        while(expoente > 0){
+            if(expoente % 2 == 1){
+                resultado = (resultado * base) % n;
+            }
+            base = (base * base) % n;
+            expoente = expoente / 2;
+        }
+        textoCriptografado[i] = resultado;
+    }
+}
+
+void descriptografar(unsigned long long textoCriptografado[tamanhoVetor], int ascii[tamanhoVetor], int d, int n, char textoOriginal[tamanhoVetor]){
+    // necessario o i esta fora do for para que eu consiga adicionar o caractere nulo no final do vetor do texto original.
+    int i;
+
+    for(i = 0; textoCriptografado[i] != 0; i++){
+        unsigned long long resultado = 1;
+        unsigned long long base = textoCriptografado[i] % n;
+        int expoente = d;
+        while(expoente > 0){
+            if(expoente % 2 == 1){
+                resultado = (resultado * base) % n;
+            }
+            base = (base * base) % n;
+            expoente = expoente / 2;
+        }
+        ascii[i] = resultado;
+    }
+
+    for(i = 0; ascii[i] != 0; i++){
+        textoOriginal[i] = static_cast<char>(ascii[i]);
+    }
+
+    textoOriginal[i] = '\0';
+}
+
+void CalculandoChavesPrimarias(int &p, int &q, int &z, int &d, int &e, int &n){
     cout << "Digite um numero primo para representar P: " << endl;
     cin >> p;
     cout << "Informe um outro numero primo para representar Q: " << endl;
     cin >> q;
-
-    // Obtendo o texto e guardando no vetor de char para conversao.
-    cout << "\n\nDigite o texto a ser criptografado: " << endl;
-    cin.ignore();
-    cin.getline(texto, tamanhoVetor);
-
-    //convertendo o texto para base numerica ascii
-    converteParaAscii(texto, textoAscii);
 
 //CALCULANDO VALORES NECESSARIOS **********
     //Calculando N e Z
@@ -66,80 +203,20 @@ int main()
     candidato = 2;
     while((candidato * d) % z != 1)
         candidato++;
-    //apos o while o e recebe o valor candidato que satisfez a formula.
+    //apos o while o e recebe o valor candidato que satisfaz a formula.
     e = candidato;
 
-    system("cls");
+    cout << "\n\nAnote cuidadosamente suas chaves:"
+         << "\nChave Privada D = " << d
+         << "\nChave publica E = " << e << endl;
 
-    //Menu para manipular as funcionalidades do programa
-    do{
-        char opcValida;
-
-        do{
-            opcValida=true;
-
-            cout << "\t\t\tMENU PRINCIPAL\n\n";
-            cout << "1) Adicionar um texto.\n"
-                 << "2) Exibir o texto.\n"
-                 << "3) Criptografar o texto.\n"
-                 << "4) Descriptografar o texto.\n"
-                 << "9) Sair do programa\n\n";
-            cout << "Escolha uma das opcoes acima: ";
-            cin >> opc;
-
-            if(opc != '1' && opc != '2' && opc != '3' && opc != '4' && opc !='9'){
-                opcValida = false;
-                cout << "\n\nOpcao invalida!";
-                system("pause");
-                system("cls");
-            }
-        }while(opcValida != true);
-    }while(opc != '9');
+         system("pause");
+         system("cls");
 }
 
-void converteParaAscii(char textoOriginal[tamanhoVetor], int ascii[tamanhoVetor]){
-    //convertendo o texto para a base ascii
-    for(int i = 0; textoOriginal[i] != '\0'; i++){
-        ascii[i] = static_cast<int>(textoOriginal[i]); // converte tipo char para int.
-    }
+void AdicionarTexto(char textoOriginal[tamanhoVetor]){
+    // Obtendo o texto e guardando no vetor de char para conversao.
+    cout << "\n\nDigite o texto a ser criptografado: " << endl;
+    cin.getline(textoOriginal, tamanhoVetor);
 }
 
-void converteParaTexto(char textoOriginal[tamanhoVetor], int ascii[tamanhoVetor]){
-    //convertendo o texto no formato ASCII para formato original novamente
-    for (int i = 0; ascii[i] != 0; i++){
-        textoOriginal[i] = static_cast<char>(ascii[i]); //convertendo tipo int para char.
-    }
-}
-
-//E preciso utilizar exponenciacao rapida modular para otimizar o tempo para calcular e evitar estouros, quebrando o calculo grande da potencia em pequenas partes.
-void criptografando(int ascii[tamanhoVetor], unsigned long long textoCriptografado[tamanhoVetor], int e, int n){
-    for(int i = 0; ascii[i] != 0; i++){
-        unsigned long long resultado = 1;
-        unsigned long long base = ascii[i] % n;
-        int expoente = e;
-        while(expoente > 0){
-            if(expoente % 2 == 1){
-                resultado = (resultado * base) % n;
-            }
-            base = (base * base) % n;
-            expoente = expoente / 2;
-        }
-        textoCriptografado[i] = resultado;
-    }
-}
-
-void descriptografando(unsigned long long textoCriptografado[tamanhoVetor], int ascii[tamanhoVetor], int d, int n){
-    for(int i = 0; textoCriptografado[i] != 0; i++){
-        unsigned long long resultado = 1;
-        unsigned long long base = textoCriptografado[i] % n;
-        int expoente = d;
-        while(expoente > 0){
-            if(expoente % 2 == 1){
-                resultado = (resultado * base) % n;
-            }
-            base = (base * base) % n;
-            expoente = expoente / 2;
-        }
-        ascii[i] = resultado;
-    }
-}
