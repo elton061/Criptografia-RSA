@@ -1,5 +1,6 @@
 # depslib dependency file v1.0
-1746827807 source:c:\users\elton\documents\projetos e codigos\c++\criptografia rsa\main.cpp
+1746838301 source:c:\users\elton\documents\projetos e codigos\c++\criptografia rsa\main.cpp
 	<iostream>
 	<limits>
+	<cstring>
 

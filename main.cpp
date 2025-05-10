@@ -1,5 +1,6 @@
 #include <iostream>
 #include <limits>
+#include <cstring>
 
 const int tamanhoVetor = 500;
 
@@ -15,98 +16,110 @@ void descriptografar(unsigned long long textoCriptografado[tamanhoVetor], int as
 
 void AdicionarTexto(char textoOriginal[tamanhoVetor]);
 
-void CalculandoChavesPrimarias(int &p, int &q, int &z, int &d, int &e, int &n);
+void CalculandoChavesPrimarias(int &p, int &q, int &z, int &n);
 
 int main()
 {
 
     int p, q, n, z, d, e;
-    char texto[tamanhoVetor];
+    char texto[tamanhoVetor]={}, textoManipulado[tamanhoVetor]={};
     int textoAscii[tamanhoVetor] = {};
     unsigned long long textoCriptografado[tamanhoVetor] = {};   //utilizei esse tipo para evitar estouro.
     int opc;
     bool statusCriptografado = false, temTexto = false;     //controladores para o menu.
 
     //Gera a chave privada e publica
-    CalculandoChavesPrimarias(p, q, z, d, e, n);
+    CalculandoChavesPrimarias(p, q, z, n);
 
     //Menu para manipular as funcionalidades do programa
     do{
-        char opcValida;
+        cout << "\t\t\tMENU PRINCIPAL\n\n"
+             << "1) Adicionar um texto.\n"
+             << "2) Exibir o texto.\n"
+             << "3) Criptografar o texto.\n"
+             << "4) Descriptografar o texto.\n"
+             << "5) Exibir texto criptografado.\n"
+             << "6) Alterar chaves primarias.\n"
+             << "9) Sair do programa\n\n";
+        cout << "Escolha uma das opcoes acima: ";
+        cin >> opc;
+        //limpa o buffer.
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
-        do{
-            opcValida=true;
-            do{
-                cout << "\t\t\tMENU PRINCIPAL\n\n"
-                     << "1) Adicionar um texto.\n"
-                     << "2) Exibir o texto.\n"
-                     << "3) Criptografar o texto.\n"
-                     << "4) Descriptografar o texto.\n"
-                     << "5) Alterar chaves primarias\n"
-                     << "9) Sair do programa\n\n";
-                cout << "Escolha uma das opcoes acima: ";
-                cin >> opc;
-                //limpa o buffer.
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        switch(opc){
+            case 1:
+                AdicionarTexto(texto);
+                strcpy(textoManipulado, texto);
+                temTexto = true;
+                cout << "\n\nTexto adicionado com sucesso!\n";
+                break;
 
-                if(opc != 1 && opc != 2 && opc != 3 && opc != 4 && opc != 5 && opc != 9){
-                    cout << "\n\nOpcao Invalida! \n";
-                    system("pause");
-                    system("cls");
-                    opcValida = false;
+            case 2:
+                if(!temTexto){
+                    cout << "\n\nNenhum texto foi adicionado ainda :(\n\n" << endl;
+                }else{
+                    cout << "\n\nTexto Original = " << texto << "\n\n";
                 }
-            }while(!opcValida);
+                break;
 
-            switch(opc){
-                case 1:
-                    AdicionarTexto(texto);
-                    temTexto = true;
-                    cout << "\n\nTexto adicionado com sucesso!\n";
-                    break;
+            case 3:
+                converteParaAscii(textoManipulado, textoAscii);
 
-                case 2:
-                    if(!temTexto){
-                        cout << "\n\nNenhum texto foi adicionado ainda :(\n\n" << endl;
-                    }else{
-                        cout << "\n\n" << texto << "\n\n";
-                    }
-                    break;
+                cout << "\n\nDigite a sua chave publica E: " << endl;
+                cin >> e;
 
-                case 3:
-                    converteParaAscii(texto, textoAscii);
-                    criptografar(textoAscii, textoCriptografado, e, n);
+                criptografar(textoAscii, textoCriptografado, e, n);
 
+                cout << "\n\nTexto Criptografado = ";
+                for(int i = 0; textoCriptografado[i] != 0; i++){
+                    cout << textoCriptografado[i] << " ";
+                }
+                cout << "\n\n";
+                statusCriptografado = true;
+                break;
+
+            case 4:
+                if(!statusCriptografado){
+                    cout << "\n\nAinda nao foi feito uma criptografia! ";
+                }else{
+                cout << "\n\nDigite a sua chave privada D: " << endl;
+                cin >> d;
+                descriptografar(textoCriptografado, textoAscii, d, n, textoManipulado);
+
+                cout << "\n\nDescriptografado com sucesso!";
+                cout << "\n\nTexto Apos descriptografar = " << textoManipulado << "\n\n";
+                }
+                break;
+
+            case 5:
+                if(!statusCriptografado){
+                    cout << "\n\nAinda nao foi feito a criptografia :(\n";
+                }else{
                     cout << "\n\nTexto Criptografado = ";
                     for(int i = 0; textoCriptografado[i] != 0; i++){
                         cout << textoCriptografado[i] << " ";
                     }
-                    cout << "\n\n";
-                    statusCriptografado = true;
-                    break;
+                }
+                cout << "\n\n";
+                break;
 
-                case 4:
-                    if(!statusCriptografado){
-                        cout << "\n\nAinda nao foi feito uma criptografia! ";
-                    }else{
-                    descriptografar(textoCriptografado, textoAscii, d, n, texto);
+            case 6:
+                CalculandoChavesPrimarias(p, q, z, n);
+                cout << "\n\nChave privada = " << d << endl;
+                cout << "Chave publica = " << e << endl;
+                break;
 
-                    cout << "\n\nDescriptografado com sucesso!";
-                    cout << "\n\nTexto Original = " << texto << "\n\n";
-                    }
-                    break;
+            case 9:
+                break;
 
-                case 5:
-                    CalculandoChavesPrimarias(p, q, z, d, e, n);
-                    cout << "\n\nChave privada = " << d << endl;
-                    cout << "Chave publica = " << e << endl;
-                    break;
-
-                default:
-                    break;
+            default:
+                cout << "\n\nOpcao Invalida! \n";
+                system("pause");
+                system("cls");
+                break;
             }
             system("pause");
             system("cls");
-        }while(opcValida != true);
     }while(opc != 9);
 }
 
@@ -166,7 +179,9 @@ void descriptografar(unsigned long long textoCriptografado[tamanhoVetor], int as
     textoOriginal[i] = '\0';
 }
 
-void CalculandoChavesPrimarias(int &p, int &q, int &z, int &d, int &e, int &n){
+void CalculandoChavesPrimarias(int &p, int &q, int &z, int &n){
+    int d, e;
+
     cout << "Digite um numero primo para representar P: " << endl;
     cin >> p;
     cout << "Informe um outro numero primo para representar Q: " << endl;
